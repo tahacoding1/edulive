@@ -122,15 +122,11 @@ export default function LandingPage() {
   const [menuOpen,   setMenuOpen]   = useState(false);
 
   useEffect(() => {
-    api.get('/content')
-      .then(({ data }) => {
-        if (data && data.content && Object.keys(data.content).length > 0) {
-          setContent(prev => ({ ...prev, ...data.content }));
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to fetch content:', err.message);
-      });
+    api.get('/content').then(({ data }) => {
+      if (data.content && Object.keys(data.content).length > 0) {
+        setContent(prev => ({ ...prev, ...data.content }));
+      }
+    }).catch(() => {});
 
     const onScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', onScroll);

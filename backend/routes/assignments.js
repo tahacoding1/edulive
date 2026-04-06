@@ -102,4 +102,45 @@ router.post('/:assignmentId/submit', authMiddleware, upload.single('file'), asyn
   }
 });
 
+// GET /api/assignments/teacher/all — all assignments teacher created
+router.get('/teacher/all', authMiddleware, async (req, res) => {
+  try {
+    if (!['teacher','admin'].includes(req.user.role))
+      return res.status(403).json({ message: 'Teachers only' });
+    const assignments = await Assignment.find({ teacher: req.user._id })
+      .populate('room', 'name roomId')
+      .populate('submissions.student', 'name email')
+      .sort({ createdAt: -1 });
+    res.json({ assignments });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// GET /api/assignments/student/all — all assignments for rooms student joined
+router.get('/student/all', authMiddleware, async (req, res) => {
+  try {
+    // Find all rooms where this student is a participant
+    const rooms = await Room.find({ participants: req.user._id });
+    const roomIds = rooms.map(r => r._id);
+
+    const assignments = await Assignment.find({ room: { $in: roomIds } })
+      .populate('room', 'name roomId')
+      .populate('teacher', 'name')
+      .populate('submissions.student', 'name email')
+      .sort({ createdAt: -1 });
+
+    // Annotate each with roomName for convenience
+    const annotated = assignments.map(a => ({
+      ...a.toObject(),
+      roomName: a.room?.name,
+      roomId:   a.room?.roomId,
+    }));
+
+    res.json({ assignments: annotated });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;

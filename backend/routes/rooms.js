@@ -54,10 +54,11 @@ router.post('/join', auth, async (req, res) => {
 // GET /api/rooms/all  — admin only
 router.get('/all', auth, async (req, res) => {
   try {
-    if (req.user.role !== 'admin')
+    if (!['admin','teacher'].includes(req.user.role))
       return res.status(403).json({ message: 'Admin only' });
 
-    const rooms = await Room.find()
+    const filter = req.user.role === 'admin' ? {} : { teacher: req.user._id };
+    const rooms = await Room.find(filter)
       .populate('teacher', 'name email')
       .sort({ createdAt: -1 });
     res.json({ rooms });
@@ -112,3 +113,17 @@ router.delete('/:roomId/participants/:userId', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// GET /api/rooms/teacher/mine — teacher sees their own rooms
+router.get('/teacher/mine', auth, async (req, res) => {
+  try {
+    if (!['teacher','admin'].includes(req.user.role))
+      return res.status(403).json({ message: 'Teachers only' });
+    const rooms = await Room.find({ teacher: req.user._id })
+      .populate('teacher', 'name email')
+      .sort({ createdAt: -1 });
+    res.json({ rooms });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});

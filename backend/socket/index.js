@@ -63,6 +63,7 @@ module.exports = (io) => {
         socket.to(roomId).emit('webrtc-new-peer', {
           peerId:   socket.user._id.toString(),
           peerName: socket.user.name,
+          peerRole: socket.user.role,
           socketId: socket.id,
         });
 
